@@ -34,6 +34,8 @@ A SwiftUI package that contains an assortment of modified input controls.  Curre
     .cvv   3 digit numeric number.  3 digits required
     .age(min: Int, max: Int) age inside specified range.  min is two digits, max is 2 or 3 digits
     .date  numeric string in the form of mm/dd/yyyy, with live and result validation
+    .streetnumber - numeric number, max 6 digits, no commas
+    .street - Similar to .name, but without restrictions on input.  Capitlaized
 
 2. the control can be called with the view call...
     Tfield($text) // where text is any state variable in your view.  text will be accepted as a @Binding var text: String.
@@ -54,6 +56,7 @@ A SwiftUI package that contains an assortment of modified input controls.  Curre
 
 5. The view is implemented as a textfield inside of a vstack and a zstack, so some modifiers - such as .autocorrectionDisabled() may be added.  If it works, give it a try, but I have not tried a lot of this, so no guarantees it renders right even if it doesnt flake out.
 6. If you don't see the data type you are looking for, you can implement it yourself by extending TType.  Instructions on how to do this are included next.
+
 
 ## Extending Tfield with additional types.
 - You can extend Tfield by adding an extension with additional types.  You should start by adding the following code...
@@ -210,6 +213,7 @@ public enum MyCustomTypes: TBType {
 
 
 ## What's Next
+- Known issue - Name validation and filtering does not work properly with the allowed punctuation.
 - expecting to add additional data types, along with additional testing of the validation closures
 - expecting to add optional badging for any type...  badges would show up to the right of the label
     badges would be updatable at any time, for instance, as soon as the first digit is entered in a credit, a badge indicating the type of card could be added to the label.  Additionally any required string may have a required badge added.
@@ -227,6 +231,19 @@ The app currently does not use local storage
 ## Screenshots
 
 maybe someday ill do this
+
+
+## Version History
+- version 1.0.1:
+    adjust spacing vertically and horizontally so template and field line up better on mac and iphone
+    additional types : .streetnumber, .street
+    added a red asterisk at the front of a field to indicate its required state
+    added state based background to the textbox... light blue gradient for idle, darker blue gradient for valid, and red gradient for invalid state.
+    fixed the macOS input not having the same background as the capsule
+    added conditional background to the floating label... clear if in the middle of the field so as not to interfere with background gradient, and using system or window background color if floating, so that the background blocks out the capsule border
+    Other tweaks to make light and dark mode work as expected.
+    
+- version 1.0.0: Initial Commit
 
 ## License
 

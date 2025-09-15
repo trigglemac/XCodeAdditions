@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -20,19 +21,22 @@ import UIKit
  7. filter: closure that handles input filtering... such as max length or limited characters like numbers only.  It should return an unformatted string (data only, no formatting characters)
  8. reconstruct: closure that accepts an unformatted data string, and filters back in the formatting characters, and at the same time resets the input template so that any characters that exist have spaces replacing those characters at the beginning of the template.
 
- Eventually, the goal is for this to be a package, and have the user be able to extend this enum to create additional custom types by defining each of these options themselves.
+ 
 */
 
 public enum TType: TBType, Equatable {
     case data  //Current Default!  single alphanumeric string, no spaces allowed
     case dataLength(length: Int)  // single alphanumeric string, specified length
-    case name  //name  Alpha string any length, allowed spaces, capitalized
+    case name  //name  Alpha string any length, allowed spaces, capitalized, limited punctuation (period, space, dash, apostrophe)
     case phrase  //phrase  alphanumeric string, spaces are allowed
     case credit  // 16 digit card number grouped in 4's
     case expDate  // MM/YY
     case cvv  // 3 digit numeric number.  3 digits required
     case age(min: Int, max: Int)  //two digit age within the specified range
     case date  // mm/dd/yyyy
+    case streetnumber //Numbers only, no template, length <= 6, no formatting, cant be 0
+    case street // Capitalized, spaces and punctuation allowed.
+    
 }
 
 extension TType {
@@ -56,6 +60,10 @@ extension TType {
             return "Age(\(min)-\(max))"
         case .date:
             return "Date"
+        case .streetnumber:
+            return "Street #"
+        case .street:
+            return "Street Name"
         }
     }
 }
@@ -81,6 +89,10 @@ extension TType {
             return max >= 100 ? "000" : "00"
         case .date:
             return "MM/DD/YYYY"
+        case .streetnumber:
+            return ""
+        case .street:
+            return ""
         }
     }
 }
@@ -91,6 +103,25 @@ extension TType {
     }
 }  // var useFilter = False if template == "", else true
 
+extension TType {
+    public var fieldPriority: Double {
+        switch self {
+        case .data: return 1.0
+        case .dataLength(_): return 1.1
+        case .name: return 1.5
+        case .phrase: return 1.7
+        case .credit: return 1.5
+        case .expDate: return 0.5
+        case .cvv: return 0.5
+        case .age(_,_): return 0.5
+        case .date: return 1.0
+        case .streetnumber: return 0.6
+        case .street: return 1.5
+            
+            
+        }
+    }
+}
 
 #if canImport(UIKit)
 extension TType {
@@ -114,6 +145,10 @@ extension TType {
             return .numberPad
         case .date:
             return .numberPad
+        case .streetnumber:
+            return .numberPad
+        case .street:
+            return .default
         }
     }
 }
@@ -149,7 +184,7 @@ extension TType {  // This will handle any data verification as numbers are bein
             return { text, errorMessage in
                 // Check for invalid characters (numbers, special chars except spaces, hyphens, apostrophes)
                 let allowedCharacterSet = CharacterSet.letters.union(
-                    CharacterSet(charactersIn: " '-"))
+                    CharacterSet(charactersIn: ". '-"))
                 if text.rangeOfCharacter(from: allowedCharacterSet.inverted)
                     != nil
                 {
@@ -477,6 +512,14 @@ extension TType {  // This will handle any data verification as numbers are bein
                     return false  // this should not be possible with input filtering
                 }
             }
+        case .streetnumber:
+            return { text, errorMessage in
+                return true
+            }
+        case .street:
+            return { text, errorMessage in
+                return true
+            }
         }
     }
 }
@@ -596,6 +639,19 @@ extension TType {  // This will handle any data verification as numbers are bein
                 errorMessage = "Invalid Date"
                 return false
             }
+        case .streetnumber:
+            return { text, errorMessage in
+                if text == "0" {
+                    errorMessage = "Street Number cannot be zero"
+                    return false
+                } else {
+                    return true
+                }
+            }
+        case .street:
+            return { text, errorMessage in
+                return true
+            }
         }
     }
 
@@ -639,7 +695,7 @@ extension TType {
             }  // same as .data, but specified length
         case .name:
             return { text in
-                text.capitalized
+                text.capitalized                
             }  // Multiple words, Proper Capitalization
         case .phrase:
             return { text in
@@ -671,6 +727,15 @@ extension TType {
             return { text in
                 let digitsOnly = text.filter { $0.isNumber }
                 return String(digitsOnly.prefix(8))
+            }
+        case .streetnumber:
+            return { text in
+                let digitsOnly = text.filter { $0.isNumber }
+                return String(digitsOnly.prefix(6))
+            }
+        case .street:
+            return { text in
+                text.capitalized
             }
         }
     }
@@ -827,6 +892,16 @@ extension TType {
                     partialTemplate = ""
                     return "ERROR" //this should never happen
                 }
+            }
+        case .streetnumber:
+            return { digitsOnly, partialTemplate in
+                partialTemplate = ""
+                return String(digitsOnly.prefix(6))
+            }
+        case .street:
+            return { text, partialTemplate in
+                partialTemplate = ""
+                return text.capitalized
             }
 
         }

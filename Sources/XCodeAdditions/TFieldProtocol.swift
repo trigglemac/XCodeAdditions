@@ -16,6 +16,9 @@ public protocol TBType {
     
     // Required by protocol.  This is the default string that will be used if none provided by the calling view
     var description: String { get }
+    
+    // Number indicating the field priority for the field if needs to be shrunk.  1.0 is  Standard.  values 0-.99 shrink first, generally lower capapcity field, like age (2 or 3 digits).  1.1 - 2.0 are numbers used currenly to restrict priority.  5+ would almost NEVER shrink.  10.0 is the max value.
+    var fieldPriority: Double { get }
 
     // This is a text string representing the input template overlay that may be displayed, such as "(000) 000-0000"  If you do not provide it, then none will be displayed.  This is represented by an empty string in the implementation, which is why the default is an empty string.  Please note, if you provide an input filter, you must also provide four closures - filter, reconstruct, validateLive, and validateResult.
     var template: String { get }

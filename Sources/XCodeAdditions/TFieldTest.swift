@@ -22,18 +22,22 @@ public struct TFieldExamples: View {
     
     public init() {}
     
+    
     public var body: some View {
         VStack(spacing: 0) {
-            Tfield($test1, type: .credit)
+            Tfield($test1, type: .streetnumber)
             Tfield($test2, type: .expDate, required: true, label: "Exp Date")
             Tfield($test3, type: .name, label: "Enter Your Full Name")
             Tfield($test4)
                 .autocorrectionDisabled(true)
             Tfield($test5, type: .dataLength(length: 10), label: "Enter your 10 digit code")
             Tfield($test6, type: .phrase, required: false, label: "Enter Info")  // Same as default
-            Tfield($test7, type: .cvv, required: true)
+            
             Tfield($test8, type: .age(min: 65, max: 120), label: "Enter your Age")
-            Tfield($test9, type: .date)
+            HStack {
+                Tfield($test9, type: .streetnumber)
+                Tfield($test7, type: .street)
+            }
         }
         .padding()
     }

@@ -81,9 +81,11 @@ public enum MyCustomTypes: TBType {
 
 
 
+import SwiftUI
 import XCodeAdditions
 
 public enum MyCustomTypes: TBType {
+    
     case zipCode
     case phoneNumber
     case socialSecurity
@@ -105,14 +107,30 @@ public enum MyCustomTypes: TBType {
     }
     
     // Platform-specific keyboard handling
-    (numbersign)if canImport(UIKit)
-    public var keyboardType: UIKeyboardType
+#if canImport(UIKit)
+    public var keyboardType: UIKeyboardType {
         switch self {
-        case .zipCode: return .numberPad
-        case .phoneNumber: return .phonePad
-        case .socialSecurity: return .numberPad
+        case .zipCode:
+            return .numberPad
+        case .phoneNumber:
+            return .phonePad
+        case .socialSecurity:
+            return .numberPad
         }
-    (numbersign)endif 
+    }
+#endif
+    
+    
+    public var fieldPriority: Double {
+        switch self {
+        case .zipCode:
+            return 0.6
+        case .phoneNumber:
+            return 0.9
+        case .socialSecurity:
+            return 0.8
+        }
+    }
 
         
     public var filter: (String) -> String {
@@ -135,23 +153,107 @@ public enum MyCustomTypes: TBType {
     public var reconstruct: (String, inout String) -> String {
         switch self {
         case .zipCode:
-            return { digits, template in
-                template = code to return a modified template that substitutes " " for any existing data
-                // no formatting needed as it is just 5 digits
-                return digits
+            return { digitsOnly, partialTemplate in
+                switch digitsOnly.count {
+                case 0:
+                    partialTemplate = "00000"
+                case 1:
+                    partialTemplate = " 0000"
+                case 2:
+                    partialTemplate = "  0000"
+                case 3:
+                    partialTemplate = "   00"
+                case 4:
+                    partialTemplate = "    0"
+                case 5:
+                    partialTemplate = "     "
+                default:
+                    partialTemplate = ""  // This should never happen, because digitsonly is 0 - 3 characters
+                }
+                return digitsOnly
             }
         case .phoneNumber:
-            return { digits, template in
+            return { digitsOnly, partialTemplate in
                 // Implementation for (000) 000-0000 formatting
-                // Assume the insertion point will be immediately following the last character entered, not immediately before the next character to be entered.  So any upcoming formatting should stay in the formatting string and not be added to the formatted data.
-                // ... for template logic...  replacing any used characters in the template with spaces
-                return formattedPhone
+                var formattedDigits = ""
+                switch digitsOnly.count {
+                case 0:
+                    partialTemplate = "(000) 000-0000"
+                    formattedDigits = ""
+                case 1:
+                    partialTemplate = "  00) 000-0000"
+                    formattedDigits = "(\(digitsOnly.prefix(1))"
+                case 2:
+                    partialTemplate = "   0) 000-0000"
+                    formattedDigits = "(\(digitsOnly.prefix(2))"
+                case 3:
+                    partialTemplate = "    ) 000-0000"
+                    formattedDigits = "(\(digitsOnly.prefix(3))"
+                case 4:
+                    partialTemplate = "       00-0000"
+                    formattedDigits = "(\(digitsOnly.prefix(3))) \(digitsOnly.dropFirst(3).prefix(1))"
+                case 5:
+                    partialTemplate = "        0-0000"
+                    formattedDigits = "(\(digitsOnly.prefix(3))) \(digitsOnly.dropFirst(3).prefix(2))"
+                case 6:
+                    partialTemplate = "         -0000"
+                    formattedDigits = "(\(digitsOnly.prefix(3))) \(digitsOnly.dropFirst(3).prefix(3))"
+               case 7:
+                    partialTemplate = "           000"
+                    formattedDigits = "(\(digitsOnly.prefix(3))) \(digitsOnly.dropFirst(3).prefix(3))-\(digitsOnly.dropFirst(6).prefix(1))"
+                case 8:
+                    partialTemplate = "            00"
+                    formattedDigits = "(\(digitsOnly.prefix(3))) \(digitsOnly.dropFirst(3).prefix(3))-\(digitsOnly.dropFirst(6).prefix(2))"
+                case 9:
+                    partialTemplate = "             0"
+                    formattedDigits = "(\(digitsOnly.prefix(3))) \(digitsOnly.dropFirst(3).prefix(3))-\(digitsOnly.dropFirst(6).prefix(3))"
+                case 10:
+                    partialTemplate = "              "
+                    formattedDigits = "(\(digitsOnly.prefix(3))) \(digitsOnly.dropFirst(3).prefix(3))-\(digitsOnly.dropFirst(6).prefix(4))"
+                default:
+                    partialTemplate = ""  // This should never happen, because digitsonly is 0 - 3 characters
+                }
+                return formattedDigits
             }
         case .socialSecurity:
-            return { digits, template in
-                // Implementation for 000-00-0000 formatting  
-                // ... formatting logic
-                return formattedSSN
+            return { digitsOnly, partialTemplate in
+                // Implementation for 000-00-0000 formatting
+                var formattedDigits: String = ""
+                switch digitsOnly.count {
+                case 0:
+                    partialTemplate = "000-00-0000"
+                    formattedDigits = ""
+                case 1:
+                    partialTemplate = " 00-00-0000"
+                    formattedDigits = "\(digitsOnly.prefix(1))"
+                case 2:
+                    partialTemplate = "  0-00-0000"
+                    formattedDigits = "\(digitsOnly.prefix(2))"
+                case 3:
+                    partialTemplate = "   -00-0000"
+                    formattedDigits = "\(digitsOnly.prefix(3))"
+                case 4:
+                    partialTemplate = "     0-0000"
+                    formattedDigits = "\(digitsOnly.prefix(3))-\(digitsOnly.dropFirst(3).prefix(1))"
+                case 5:
+                    partialTemplate = "      -0000"
+                    formattedDigits = "\(digitsOnly.prefix(3))-\(digitsOnly.dropFirst(3).prefix(2))"
+                case 6:
+                    partialTemplate = "        000"
+                    formattedDigits = "\(digitsOnly.prefix(3))-\(digitsOnly.dropFirst(3).prefix(2))-\(digitsOnly.dropFirst(5).prefix(1))"
+                case 7:
+                    partialTemplate = "         00"
+                    formattedDigits = "\(digitsOnly.prefix(3))-\(digitsOnly.dropFirst(3).prefix(2))-\(digitsOnly.dropFirst(5).prefix(2))"
+                case 8:
+                    partialTemplate = "          0"
+                    formattedDigits = "\(digitsOnly.prefix(3))-\(digitsOnly.dropFirst(3).prefix(2))-\(digitsOnly.dropFirst(5).prefix(3))"
+                case 9:
+                    partialTemplate = "           "
+                    formattedDigits = "\(digitsOnly.prefix(3))-\(digitsOnly.dropFirst(3).prefix(2))-\(digitsOnly.dropFirst(5).prefix(4))"
+                default:
+                    partialTemplate = ""  // This should never happen, because digitsonly is 0 - 3 characters
+                }
+                return formattedDigits
             }
         }
     }
@@ -184,7 +286,7 @@ public enum MyCustomTypes: TBType {
                 // code to verify result after the field looses focus - in otherwords, the final answer.
                 // You do not need to test for required status.  You may want to test that either your final value is valid, or that the value is a complete value.
                 // For instance, here you may want to verify that a five digit zip was entered, not a partial
-                If text.length = 5 {
+                if text.count == 5 {
                     return true
                 } else {
                     errorMessage = "Incomplete Zip Code"
@@ -194,11 +296,21 @@ public enum MyCustomTypes: TBType {
             }
         case .phoneNumber:
             return { text, errorMessage in
-                // Implementation for verification
+                if text.count == 14 {
+                    return true
+                } else {
+                    errorMessage = "Incomplete Phone #"
+                    return false
+                }
             }
         case .socialSecurity:
             return { text, errorMessage in
-                // implementation for verification.
+                if text.count == 11 {
+                    return true
+                } else {
+                    errorMessage = "Incomplete SSN"
+                    return false
+                }
             }
         }
     }
@@ -209,6 +321,12 @@ public enum MyCustomTypes: TBType {
     template = "" //no input template
     validateLive, validateResult default to true, no data validation
     filter and reconstruct default to no action ie no filtering or formatting
+
+- Once you have added the above example code, or something similar to your project, you should be able to call Tfield using your custome type implementations.
+
+            Tfield($text, type: MyCustomTypes.phoneNumber)
+            Tfield($text10, type: MyCustomTypes.zipCode, label: "Zip5")
+
 
 
 
@@ -234,6 +352,13 @@ maybe someday ill do this
 
 
 ## Version History
+- version 1.0.2
+    fixed the generic typing in TType to allow extensions to work properly
+    adjusted template location by a couple pixels so it lined up better
+    shifted the error message inside the capsule so that the field height stays consistent rather or not there is an error.
+    adjusted size and location of Required indicator
+    *known issues - versioning is not done right on GitHub, apostrophe in .name is not recognized, when lenght of view is shortened, label is not considered, when some fields are shortened you can tab into them but you cannot click into them, .credit verifies type on first digit, but then accepts a two digit or greater with invalid first digit.  adding .font(.title) to the field only affects the label - try to make it scale everything if possible.
+    
 - version 1.0.1:
     adjust spacing vertically and horizontally so template and field line up better on mac and iphone
     additional types : .streetnumber, .street

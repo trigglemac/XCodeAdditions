@@ -7,11 +7,11 @@
 
 import SwiftUI
 
-public struct Tfield: View {
+public struct Tfield<T: TBType>: View {
     @Binding var text: String
     var label: String
     var required: Bool
-    var type: TType
+    var type: T
     @State private var deletedCharacters: [Character] = []
     @State var inputState: InputState = .idle
     @State private var prompt: String
@@ -21,7 +21,7 @@ public struct Tfield: View {
     private let debugging: Bool = true
 
     public init(
-        _ text: Binding<String>, type: TType = .phrase, required: Bool = false,
+        _ text: Binding<String>, type: T, required: Bool = false,
         label: String = ""
     ) {
         self._text = text
@@ -35,10 +35,12 @@ public struct Tfield: View {
         VStack(alignment: .leading) {
             ZStack(alignment: .leading) {
                 TextFieldView
+                requiredIndicator
                 floatingLabel
                 makeStateMessage()
+                makeErrorMessage()
             }
-            makeErrorMessage()
+            
         }
         .frame(height: mainFrameHeight)
         .layoutPriority(contentPriority)
@@ -134,6 +136,20 @@ public struct Tfield: View {
     TFieldExamples()
 }
 
+public extension Tfield where T == TType {
+    init(
+        _ text: Binding<String>, type: TType = .phrase, required: Bool = false,
+        label: String = ""
+    ) {
+        self._text = text
+        self.type = type
+        self.required = required
+        self.label = label
+        _prompt = State(initialValue: type.template)
+    }
+}
+
+//MARK: TextFieldView
 extension Tfield {
     var TextFieldView: some View {
         ZStack {
@@ -171,7 +187,7 @@ extension Tfield {
         .frame(minWidth: cachedMinWidth, maxWidth: .infinity)
     }
 
-    // 3. State-responsive gradient:
+    // State-responsive gradient:
     var stateGradient: LinearGradient {
         let baseOpacity: Double = isFocused ? 0.08 : 0.04
 
@@ -209,9 +225,7 @@ extension Tfield {
 
 extension Tfield {
     var floatingLabel: some View {
-        HStack {
-            Text(required ? "*" : "")
-                .foregroundColor(.red)
+
             Text(getLabel())
                 .padding(.horizontal, 5)
                 .background(labelBackground)
@@ -222,7 +236,18 @@ extension Tfield {
                 .onTapGesture {
                     isFocused = true
                 }
-        }
+        
+    }
+
+    var requiredIndicator: some View {
+
+            Text(required ? "*" : "")
+            .font(.title)
+                .foregroundColor(.red)
+                .padding(.horizontal, 5)
+                .background(.clear)
+                .offset(y: -24)
+        
     }
 
     //Dynamic label background
@@ -262,11 +287,25 @@ extension Tfield {
                 Text(message)
                     .foregroundColor(.red)
                     .font(.caption)
+                    .padding(.leading, 4)
+                    .padding(.trailing, 4)
+
+                    .background(errorBackground)
                     .padding(.leading)
                     .offset(y: errorOffset)
+                    .offset(x: 10)
                     .padding(.top, 4)
             }
         }
+    }
+    var errorBackground: Color {
+       
+#if canImport(UIKit)
+            return Color(UIColor.systemBackground)
+#else
+            return Color(NSColor.windowBackgroundColor)
+#endif
+        
     }
 }  // makeErrorMessage
 
@@ -275,8 +314,9 @@ extension Tfield {
     func makeStateMessage() -> some View {
         Group {
             if debugging {
+                
                 Text(
-                    "\(type) / \(inputState.description) / P:\(String(format: "%.1f", contentPriority))"
+                    "\(String(describing: type)) / \(inputState.description) / P:\(String(format: "%.1f", contentPriority))"
                 ).foregroundStyle(inputState.debugDescriptionColor)
                     .bold(required)
                     .font(.caption)
@@ -284,7 +324,6 @@ extension Tfield {
                     .padding(.leading)
                     .offset(y: debugOffset)
                     .offset(x: -10)
-                    .padding(.top, 4)
             } else {
                 EmptyView()
             }
@@ -312,7 +351,7 @@ extension Tfield {
     var errorOffset: CGFloat {
         switch inputState {
         case .idle where text.isEmpty: return 0
-        default: return -10
+        default: return 18
         }
     }
 
@@ -328,10 +367,10 @@ extension Tfield {
     var mainFrameHeight: CGFloat {
         var height: CGFloat = 55
         if hasError {
-            height += 30
+            height += 0
         }
         if debugging {
-            height += 10
+            height += 12
         }
         return height
     }
@@ -349,7 +388,7 @@ extension Tfield {
         #if canImport(UIKit)
             offset = 1
         #else
-            offset = 4
+            offset = 1
         #endif
         return CGFloat(offset)
     }
@@ -357,9 +396,21 @@ extension Tfield {
     var templateYOffset: CGFloat {
         var offset = 0
         #if canImport(UIKit)
-            offset = 0
+            switch inputState {
+            case .focused(.invalid), .inactive(.invalid):
+                offset = 1
+            default:
+                offset = 0
+        }
         #else
-            offset = 1
+        switch inputState {
+        case .focused(.invalid), .inactive(.invalid):
+            offset = 0
+        default:
+            offset = 0
+        }
+
+
         #endif
         return CGFloat(offset)
     }

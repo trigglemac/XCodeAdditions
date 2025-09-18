@@ -27,7 +27,7 @@ public struct TFieldExamples: View {
         VStack(spacing: 0) {
             Tfield($test1, type: .streetnumber)
             Tfield($test2, type: .expDate, required: true, label: "Exp Date")
-            Tfield($test3, type: .name, label: "Enter Your Full Name")
+            Tfield($test3, type: .credit)
             Tfield($test4)
                 .autocorrectionDisabled(true)
             Tfield($test5, type: .dataLength(length: 10), label: "Enter your 10 digit code")
